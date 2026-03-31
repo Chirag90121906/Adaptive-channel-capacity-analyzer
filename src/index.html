@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Adaptive Channel Capacity Analyzer</title>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #0a0a0a, #000000 80%);
+      color: #eaeaea;
+      font-family: "Segoe UI", Arial;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      background: linear-gradient(90deg, #d4af37, #fff2b2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 32px;
+      text-shadow: 0 0 20px rgba(212,175,55,0.3);
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(10,10,10,0.95));
+      border: 1px solid rgba(212,175,55,0.3);
+      padding: 25px;
+      border-radius: 20px;
+      width: 380px;
+      box-shadow:
+        0 10px 40px rgba(0,0,0,0.8),
+        inset 0 0 20px rgba(212,175,55,0.05);
+      transition: 0.3s;
+      backdrop-filter: blur(15px);
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow:
+        0 20px 60px rgba(212,175,55,0.2),
+        inset 0 0 30px rgba(212,175,55,0.1);
+    }
+
+    label {
+      font-size: 14px;
+      color: #bfa76a;
+      margin-top: 10px;
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      background: rgba(20,20,20,0.9);
+      border: 1px solid rgba(212,175,55,0.2);
+      color: white;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(20,20,20,0.9);
+      color: white;
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 8px;
+    }
+
+    input:focus {
+      outline: none;
+      border: 1px solid #d4af37;
+      box-shadow:
+        0 0 10px rgba(212,175,55,0.6),
+        inset 0 0 5px rgba(212,175,55,0.3);
+    }
+
+    button {
+      padding: 10px 18px;
+      margin-top: 15px;
+      background: linear-gradient(90deg, #d4af37, #f5d76e);
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      color: black;
+      transition: 0.3s;
+      box-shadow: 0 5px 20px rgba(212,175,55,0.3);
+    }
+
+    button:hover {
+      transform: scale(1.08);
+      box-shadow: 0 10px 30px rgba(212,175,55,0.6);
+    }
+
+    canvas {
+      margin-top: 20px;
+      background: #111;
+      border-radius: 10px;
+      width: 100%;
+      height: auto;
+    }
+
+    .bar {
+      height: 10px;
+      background: linear-gradient(90deg, #444, #d4af37, #fff2b2);
+      border-radius: 10px;
+      margin-top: 10px;
+      box-shadow: 0 0 10px rgba(212,175,55,0.4);
+    }
+
+    .explanation {
+      margin-top: 40px;
+      background: linear-gradient(145deg, rgba(20,20,20,0.95), rgba(5,5,5,0.95));
+      padding: 25px;
+      border-radius: 15px;
+      border: 1px solid rgba(212,175,55,0.2);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Adaptive Channel Capacity Analyzer</h1>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Input</h3>
+    <label>Scenario Mode</label>
+    <select id="scenario" onchange="applyScenario()">
+      <option value="">Custom</option>
+      <option value="ideal">Ideal Channel</option>
+      <option value="noisy">Noisy Channel</option>
+      <option value="bandwidth">High Bandwidth</option>
+    </select>
+
+    <label>Bandwidth (Hz)</label>
+    <input id="bandwidth" placeholder="Enter bandwidth" oninput="calculate()">
+
+    <label>Signal Levels (L)</label>
+    <input id="levels" placeholder="Enter levels" oninput="calculate()">
+
+    <label>Signal Power (S)</label>
+    <input id="signal" placeholder="Enter signal power" oninput="calculate()">
+
+    <label>Noise Power (N)</label>
+    <input id="noise" placeholder="Enter noise power" oninput="calculate()">
+
+    <button onclick="resetFields()">Reset</button>
+  </div>
+
+  <div class="card">
+    <h3>Results</h3>
+    <p id="inputSummary" style="color:#00f5d4; font-size:14px;"></p>
+    <p id="nyquist"></p>
+    <p id="shannon"></p>
+    <p id="snr"></p>
+    <p id="modulation"></p>
+    <p id="efficiency"></p>
+    <p id="insight"></p>
+
+    <div class="bar" id="snrBar"></div>
+
+    <canvas id="graph" width="300" height="200"></canvas>
+  </div>
+
+</div>
+
+<div class="explanation">
+  <h3>Explanation</h3>
+
+  <p><b>Nyquist Theorem:</b> Maximum data rate without noise</p>
+  <p>Formula: 2 × B × log₂(L)</p>
+
+  <p><b>Shannon Theorem:</b> Maximum data rate with noise</p>
+  <p>Formula: B × log₂(1 + S/N)</p>
+
+  <p><b>SNR (Signal-to-Noise Ratio):</b> Determines channel quality</p>
+
+  <p><b>Interpretation:</b></p>
+  <ul>
+    <li>Low SNR → Poor channel → Simple modulation (BPSK)</li>
+    <li>Medium SNR → Moderate channel → QPSK</li>
+    <li>High SNR → Good channel → QAM</li>
+  </ul>
+</div>
+
+<script>
+function applyScenario() {
+  let scenario = document.getElementById("scenario").value;
+
+  if (scenario === "ideal") {
+    bandwidth.value = 5000;
+    levels.value = 16;
+    signal.value = 100;
+    noise.value = 1;
+  }
+  else if (scenario === "noisy") {
+    bandwidth.value = 3000;
+    levels.value = 4;
+    signal.value = 5;
+    noise.value = 20;
+  }
+  else if (scenario === "bandwidth") {
+    bandwidth.value = 10000;
+    levels.value = 8;
+    signal.value = 50;
+    noise.value = 5;
+  }
+
+  calculate();
+}
+
+function calculate() {
+
+  let B = parseFloat(document.getElementById("bandwidth").value);
+  let L = parseInt(document.getElementById("levels").value);
+  let S = parseFloat(document.getElementById("signal").value);
+  let N = parseFloat(document.getElementById("noise").value);
+
+  if (!B || !L || !S || !N) return;
+
+  let nyquist = 2 * B * Math.log2(L);
+  let snr = S / N;
+  let shannon = B * Math.log2(1 + snr);
+  let snrDb = 10 * Math.log10(snr);
+
+  let modulation = snrDb < 10 ? "BPSK" : snrDb < 20 ? "QPSK" : "16-QAM";
+
+  let efficiency = (shannon / nyquist) * 100;
+
+  let insight = shannon < nyquist
+    ? "Channel is noise-limited"
+    : "Channel is bandwidth-limited";
+
+  document.getElementById("inputSummary").innerText =
+    "Inputs → B: " + B + " Hz | L: " + L + " | S: " + S + " | N: " + N;
+
+  document.getElementById("nyquist").innerText = "Nyquist: " + nyquist.toFixed(2);
+  document.getElementById("shannon").innerText = "Shannon: " + shannon.toFixed(2);
+  document.getElementById("snr").innerText = "SNR (dB): " + snrDb.toFixed(2);
+  document.getElementById("modulation").innerText = "Modulation: " + modulation;
+  document.getElementById("efficiency").innerText = "Efficiency: " + efficiency.toFixed(2) + "%";
+  document.getElementById("insight").innerText = "Insight: " + insight;
+
+  document.getElementById("snrBar").style.width = Math.min(snrDb * 5, 100) + "%";
+
+  animateGraph(nyquist, shannon);
+}
+
+function resetFields() {
+  document.querySelectorAll("input").forEach(i => i.value = "");
+  document.querySelectorAll("p").forEach(p => p.innerText = "");
+}
+
+function animateGraph(nyquist, shannon) {
+  let canvas = document.getElementById("graph");
+  let ctx = canvas.getContext("2d");
+
+  let max = Math.max(nyquist, shannon);
+  let ny = 0, sh = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, 300, 200);
+
+    // axis
+    ctx.strokeStyle = "#888";
+    ctx.beginPath();
+    ctx.moveTo(40, 10);
+    ctx.lineTo(40, 180);
+    ctx.lineTo(260, 180);
+    ctx.stroke();
+
+    ny += (nyquist - ny) * 0.1;
+    sh += (shannon - sh) * 0.1;
+
+    let nyH = (ny / max) * 150;
+    let shH = (sh / max) * 150;
+
+    // Nyquist
+    ctx.fillStyle = "#d4af37";
+    ctx.fillRect(70, 180 - nyH, 50, nyH);
+    ctx.fillStyle = "white";
+    ctx.fillText(ny.toFixed(0), 70, 180 - nyH - 5);
+
+    // Shannon
+    ctx.fillStyle = "#999";
+    ctx.fillRect(170, 180 - shH, 50, shH);
+    ctx.fillStyle = "white";
+    ctx.fillText(sh.toFixed(0), 170, 180 - shH - 5);
+
+    ctx.fillText("Nyquist", 70, 195);
+    ctx.fillText("Shannon", 170, 195);
+
+    if (Math.abs(ny - nyquist) > 1 || Math.abs(sh - shannon) > 1) {
+      requestAnimationFrame(draw);
+    }
+  }
+
+  draw();
+}
+</script>
+
+</body>
+</html>
