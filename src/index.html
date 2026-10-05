@@ -4,16 +4,21 @@
 <head>
   <title>Adaptive Channel Capacity Analyzer</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       background: radial-gradient(circle at top, #0a0a0a, #000000 80%);
       color: #eaeaea;
       font-family: "Segoe UI", Arial;
       margin: 0;
-      padding: 30px;
+      padding: 24px;
     }
 
     h1 {
       text-align: center;
+      margin: 4px 0 28px;
       background: linear-gradient(90deg, #d4af37, #fff2b2);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -22,31 +27,30 @@
     }
 
     .container {
-      display: flex;
-      gap: 30px;
-      justify-content: center;
-      margin-top: 20px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: minmax(250px, 0.9fr) minmax(380px, 1.25fr) minmax(280px, 0.95fr);
+      gap: 18px;
+      align-items: start;
+      max-width: 1480px;
+      margin: 0 auto;
     }
 
     .card {
       background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(10, 10, 10, 0.95));
       border: 1px solid rgba(212, 175, 55, 0.3);
-      padding: 25px;
-      border-radius: 20px;
-      width: 380px;
+      padding: 22px;
+      border-radius: 14px;
+      min-width: 0;
       box-shadow:
         0 10px 40px rgba(0, 0, 0, 0.8),
         inset 0 0 20px rgba(212, 175, 55, 0.05);
-      transition: 0.3s;
       backdrop-filter: blur(15px);
     }
 
-    .card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow:
-        0 20px 60px rgba(212, 175, 55, 0.2),
-        inset 0 0 30px rgba(212, 175, 55, 0.1);
+    .card h3 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      color: #f4e5b5;
     }
 
     label {
@@ -88,28 +92,86 @@
 
     button {
       padding: 10px 18px;
-      margin-top: 15px;
+      margin: 10px 6px 0 0;
       background: linear-gradient(90deg, #d4af37, #f5d76e);
       border: none;
-      border-radius: 25px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: bold;
       color: black;
-      transition: 0.3s;
+      transition: filter 0.2s ease, transform 0.2s ease;
       box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
     }
 
     button:hover {
-      transform: scale(1.08);
-      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.6);
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .chart-panel {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid rgba(212, 175, 55, 0.18);
+      border-radius: 10px;
+      background: rgba(7, 13, 15, 0.8);
+    }
+
+    .chart-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .chart-heading h4 {
+      margin: 0;
+      color: #f4e5b5;
+      font-size: 14px;
+    }
+
+    .chart-heading p,
+    .chart-note {
+      margin: 5px 0 0;
+      color: #aab9b9;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      color: #d3dddd;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
     }
 
     canvas {
-      margin-top: 20px;
-      background: #111;
-      border-radius: 10px;
+      display: block;
       width: 100%;
       height: auto;
+      aspect-ratio: 1.8;
+      border-radius: 7px;
+      background: #101719;
+    }
+
+    .chart-note {
+      min-height: 18px;
+      margin-top: 8px;
     }
 
     .bar {
@@ -191,6 +253,48 @@
       border: 1px solid rgba(212, 175, 55, 0.2);
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
     }
+
+    @media (max-width: 1120px) {
+      .container {
+        grid-template-columns: minmax(240px, 0.85fr) minmax(360px, 1.15fr);
+      }
+
+      .container > .card:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      .container {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .container > .card:last-child {
+        grid-column: auto;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .chart-heading {
+        flex-direction: column;
+      }
+
+      .chart-legend {
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
 
@@ -211,16 +315,16 @@
       </select>
 
       <label>Bandwidth (Hz)</label>
-      <input id="bandwidth" placeholder="Enter bandwidth" oninput="calculate()">
+      <input id="bandwidth" type="number" min="0.000001" step="any" placeholder="Enter bandwidth" oninput="calculate()">
 
       <label>Signal Levels (L)</label>
-      <input id="levels" placeholder="Enter levels" oninput="calculate()">
+      <input id="levels" type="number" min="2" step="1" placeholder="Enter levels" oninput="calculate()">
 
       <label>Signal Power (S)</label>
-      <input id="signal" placeholder="Enter signal power" oninput="calculate()">
+      <input id="signal" type="number" min="0.000001" step="any" placeholder="Enter signal power" oninput="calculate()">
 
       <label>Noise Power (N)</label>
-      <input id="noise" placeholder="Enter noise power" oninput="calculate()">
+      <input id="noise" type="number" min="0" step="any" placeholder="Enter noise power" oninput="calculate()">
 
       <button onclick="resetFields()">Reset</button>
       <button onclick="saveCase()">Save Case</button>
@@ -241,7 +345,20 @@
 
       <div class="bar" id="snrBar"></div>
 
-      <canvas id="graph" width="300" height="200"></canvas>
+      <section class="chart-panel" aria-labelledby="chartTitle">
+        <div class="chart-heading">
+          <div>
+            <h4 id="chartTitle">Capacity comparison</h4>
+            <p>Maximum achievable data rate</p>
+          </div>
+          <div class="chart-legend" aria-label="Chart legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:#f0c95c;"></span>Nyquist</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#35c6b3;"></span>Shannon</span>
+          </div>
+        </div>
+        <canvas id="graph" width="900" height="500" role="img" aria-label="Capacity comparison chart"></canvas>
+        <p id="graphNote" class="chart-note" aria-live="polite">Choose a scenario or enter all four channel values to view the comparison.</p>
+      </section>
 
       <div class="compare-section">
         <h4 style="margin-top:20px; color:#d4af37;">Compare Multiple Inputs</h4>
@@ -317,17 +434,22 @@
 
     let savedCases = [];
     let caseCount = 0;
+    let currentGraphData = null;
 
     function calculate() {
 
       let B = parseFloat(document.getElementById("bandwidth").value);
-      let L = parseInt(document.getElementById("levels").value);
+      let L = parseFloat(document.getElementById("levels").value);
       let S = parseFloat(document.getElementById("signal").value);
       let N = parseFloat(document.getElementById("noise").value);
 
-      if (!B || !L || !S || N < 0 || isNaN(N)) {
-        document.getElementById("dynamicExplanation").innerText = "";
-        document.getElementById("edgeCaseNote").innerText = "";
+      if (!Number.isFinite(B) || B <= 0 || !Number.isInteger(L) || L < 2 ||
+        !Number.isFinite(S) || S <= 0 || !Number.isFinite(N) || N < 0) {
+        const hasInput = ["bandwidth", "levels", "signal", "noise"]
+          .some(id => document.getElementById(id).value !== "");
+        clearResults(hasInput
+          ? "Use positive bandwidth and signal power, at least 2 integer signal levels, and nonnegative noise."
+          : "Choose a scenario or enter all four channel values to view the comparison.");
         return;
       }
 
@@ -393,18 +515,19 @@
       document.getElementById("efficiency").innerText = "Efficiency: " + efficiency.toFixed(2) + "%";
       document.getElementById("insight").innerText = "Insight: " + insight;
 
-      document.getElementById("snrBar").style.width = Math.min(snrDb * 5, 100) + "%";
+      document.getElementById("snrBar").style.width = Math.max(0, Math.min(snrDb * 5, 100)) + "%";
 
-      animateGraph(nyquist, shannon);
+      drawGraph(nyquist, shannon);
     }
 
     function saveCase() {
       let B = parseFloat(document.getElementById("bandwidth").value);
-      let L = parseInt(document.getElementById("levels").value);
+      let L = parseFloat(document.getElementById("levels").value);
       let S = parseFloat(document.getElementById("signal").value);
       let N = parseFloat(document.getElementById("noise").value);
 
-      if (!B || !L || !S || !N) {
+      if (!Number.isFinite(B) || B <= 0 || !Number.isInteger(L) || L < 2 ||
+        !Number.isFinite(S) || S <= 0 || !Number.isFinite(N) || N < 0) {
         alert("Fill in all fields before saving a case.");
         return;
       }
@@ -455,7 +578,12 @@
       document.getElementById("levels").value = "";
       document.getElementById("signal").value = "";
       document.getElementById("noise").value = "";
+      document.getElementById("scenario").value = "";
 
+      clearResults();
+    }
+
+    function clearResults(note = "Choose a scenario or enter all four channel values to view the comparison.") {
       document.getElementById("inputSummary").innerText = "";
       document.getElementById("nyquist").innerText = "";
       document.getElementById("shannon").innerText = "";
@@ -470,54 +598,111 @@
       document.getElementById("calcStep3").innerText = "";
       document.getElementById("calcStep4").innerText = "";
       document.getElementById("edgeCaseNote").innerText = "";
+      document.getElementById("snrBar").style.width = "0%";
+      document.getElementById("graphNote").innerText = note;
+      drawGraph(null, null);
     }
 
-    function animateGraph(nyquist, shannon) {
+    function drawGraph(nyquist, shannon) {
       let canvas = document.getElementById("graph");
-      let ctx = canvas.getContext("2d");
-
-      let max = Math.max(nyquist, shannon);
-      let ny = 0, sh = 0;
-
-      function draw() {
-        ctx.clearRect(0, 0, 300, 200);
-
-        // axis
-        ctx.strokeStyle = "#888";
-        ctx.beginPath();
-        ctx.moveTo(40, 10);
-        ctx.lineTo(40, 180);
-        ctx.lineTo(260, 180);
-        ctx.stroke();
-
-        ny += (nyquist - ny) * 0.1;
-        sh += (shannon - sh) * 0.1;
-
-        let nyH = (ny / max) * 150;
-        let shH = (sh / max) * 150;
-
-        // Nyquist
-        ctx.fillStyle = "#d4af37";
-        ctx.fillRect(70, 180 - nyH, 50, nyH);
-        ctx.fillStyle = "white";
-        ctx.fillText(ny.toFixed(0), 70, 180 - nyH - 5);
-
-        // Shannon
-        ctx.fillStyle = "#999";
-        ctx.fillRect(170, 180 - shH, 50, shH);
-        ctx.fillStyle = "white";
-        ctx.fillText(sh.toFixed(0), 170, 180 - shH - 5);
-
-        ctx.fillText("Nyquist", 70, 195);
-        ctx.fillText("Shannon", 170, 195);
-
-        if (Math.abs(ny - nyquist) > 1 || Math.abs(sh - shannon) > 1) {
-          requestAnimationFrame(draw);
-        }
+      if (arguments.length > 0) {
+        currentGraphData = nyquist === null || shannon === null ? null : { nyquist, shannon };
       }
 
-      draw();
+      const bounds = canvas.getBoundingClientRect();
+      if (!bounds.width) return;
+
+      const pixelRatio = window.devicePixelRatio || 1;
+      const width = bounds.width;
+      const height = bounds.height;
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+
+      let ctx = canvas.getContext("2d");
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const margin = { top: 18, right: 16, bottom: 48, left: 64 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      const finiteMaximum = currentGraphData
+        ? Math.max(currentGraphData.nyquist, Number.isFinite(currentGraphData.shannon) ? currentGraphData.shannon : 0)
+        : 0;
+      const axisMaximum = finiteMaximum > 0 ? finiteMaximum * 1.2 : 1;
+      const scale = finiteMaximum >= 1e9
+        ? { divisor: 1e9, unit: "Gbps" }
+        : finiteMaximum >= 1e6
+          ? { divisor: 1e6, unit: "Mbps" }
+          : finiteMaximum >= 1e3
+            ? { divisor: 1e3, unit: "kbps" }
+            : { divisor: 1, unit: "bps" };
+
+      ctx.font = "12px 'Segoe UI', Arial, sans-serif";
+      ctx.textBaseline = "middle";
+
+      for (let tickIndex = 0; tickIndex <= 4; tickIndex += 1) {
+        const tickValue = axisMaximum * tickIndex / 4;
+        const y = margin.top + plotHeight - plotHeight * tickIndex / 4;
+        ctx.strokeStyle = "#29383a";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(width - margin.right, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#aab9b9";
+        ctx.textAlign = "right";
+        ctx.fillText(`${(tickValue / scale.divisor).toFixed(tickValue === 0 ? 0 : 1)} ${scale.unit}`, margin.left - 8, y);
+      }
+
+      if (!currentGraphData) {
+        ctx.fillStyle = "#aab9b9";
+        ctx.textAlign = "center";
+        ctx.fillText("No capacity data yet", margin.left + plotWidth / 2, margin.top + plotHeight / 2);
+        canvas.setAttribute("aria-label", "Capacity comparison chart awaiting valid inputs");
+        return;
+      }
+
+      const barWidth = Math.min(76, plotWidth * 0.22);
+      const barCenters = [margin.left + plotWidth * 0.3, margin.left + plotWidth * 0.72];
+      const chartValues = [currentGraphData.nyquist, currentGraphData.shannon];
+      const chartLabels = ["Nyquist limit", "Shannon capacity"];
+      const chartColors = ["#f0c95c", "#35c6b3"];
+
+      chartValues.forEach((value, index) => {
+        const plottedValue = Number.isFinite(value) ? value : axisMaximum;
+        const barHeight = Math.max(0, plottedValue / axisMaximum * plotHeight);
+        const x = barCenters[index] - barWidth / 2;
+        const y = margin.top + plotHeight - barHeight;
+
+        ctx.fillStyle = chartColors[index];
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = "#f4f7f5";
+        ctx.textAlign = "center";
+        const valueLabel = Number.isFinite(value)
+          ? `${(value / scale.divisor).toLocaleString(undefined, { maximumFractionDigits: 1 })} ${scale.unit}`
+          : "∞";
+        ctx.fillText(valueLabel, barCenters[index], Math.max(margin.top + 8, y - 10));
+        ctx.fillStyle = "#d3dddd";
+        ctx.fillText(chartLabels[index], barCenters[index], height - margin.bottom + 23);
+      });
+
+      const hasInfiniteShannon = !Number.isFinite(currentGraphData.shannon);
+      document.getElementById("graphNote").innerText = hasInfiniteShannon
+        ? "Zero noise makes Shannon capacity unbounded; the bar is capped at the chart ceiling."
+        : `Rates are shown in ${scale.unit}. The chart rescales to fit the current channel values.`;
+      canvas.setAttribute("aria-label", hasInfiniteShannon
+        ? "Nyquist capacity compared with infinite Shannon capacity"
+        : `Nyquist capacity ${currentGraphData.nyquist} bps compared with Shannon capacity ${currentGraphData.shannon} bps`);
     }
+
+    const graphResizeObserver = new ResizeObserver(() => drawGraph());
+    graphResizeObserver.observe(document.getElementById("graph"));
+    drawGraph(null, null);
+
+    window.addEventListener("resize", () => {
+      drawGraph();
+    });
   </script>
 
 </body>
